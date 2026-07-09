@@ -72,7 +72,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
 
   if (loading || !roomData) return <p className="text-xl">Memuat Room...</p>;
 
-  const { board, players, turn, status, winner, rematch } = roomData;
+  const { board, players, turn, status, winner} = roomData;
 
   const myRole: PlayerRole | null =
     players.p1 === playerId ? "p1" : players.p2 === playerId ? "p2" : null;
@@ -116,12 +116,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
     update(ref(db, `rooms/${roomId}`), updates);
   };
 
-  const handleRematchRequest = () => {
-    if (!myRole) return;
-    update(ref(db, `rooms/${roomId}`), {
-      [`rematch/${myRole}`]: true,
-    });
-  };
+  // const handleRematchRequest = () => {
+  //   if (!myRole) return;
+  //   update(ref(db, `rooms/${roomId}`), {
+  //     [`rematch/${myRole}`]: true,
+  //   });
+  // };
 
   return (
     <div className="flex flex-col items-center bg-slate-800 p-6 rounded-lg shadow-xl border border-slate-700 w-full max-w-md">
