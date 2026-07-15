@@ -48,14 +48,20 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
       ) {
         update(ref(db, `rooms/${roomId}`), {
           "players/p2": playerId,
-          status: "playing",
+          status: "ready",
         });
+        return;
       }
 
-      if (data.rematch?.p1 && data.rematch?.p2 && data.players.p1 === playerId) {
+      if (
+        data.rematch?.p1 &&
+        data.rematch?.p2 &&
+        data.players.p1 === playerId
+      ) {
+        const firstTurn = Math.random() < 0.5 ? "p1" : "p2";
         const resetState: Partial<RoomData> = {
           board: Array(9).fill("") as BoardCell[],
-          turn: "p1",
+          turn: firstTurn,
           status: "playing",
           winner: "",
           rematch: { p1: false, p2: false },
@@ -73,7 +79,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
 
   if (loading || !roomData) return <p className="text-xl">Memuat Room...</p>;
 
-  const { board, players, turn, status, winner,rematch} = roomData;
+  const { board, players, turn, status, winner, rematch } = roomData;
 
   const myRole: PlayerRole | null =
     players.p1 === playerId ? "p1" : players.p2 === playerId ? "p2" : null;
@@ -94,6 +100,19 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
     return "";
   };
 
+  const handleStartGame = () => {
+    const firstTurn = Math.random() < 0.5 ? "p1" : "p2";
+
+    update(ref(db, `rooms/${roomId}`), {
+      status: "playing",
+      turn: firstTurn,
+    });
+  };
+  const handleReady = () => {
+    update(ref(db, `rooms/${roomId}`), {
+      "ready/p2": true,
+    });
+  };
   const handleCellClick = (index: number) => {
     if (status !== "playing") return;
     if (turn !== myRole) return;
@@ -117,11 +136,11 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
     update(ref(db, `rooms/${roomId}`), updates);
   };
 
-  const handleLeave = async ()=>{
+  const handleLeave = async () => {
     localStorage.removeItem("roomId");
-    await remove(ref(db,`rooms/${roomId}`));
+    await remove(ref(db, `rooms/${roomId}`));
     leaveRoom();
-  }
+  };
 
   const handleRematchRequest = () => {
     if (!myRole) return;
@@ -148,6 +167,14 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
             Menunggu Lawan Bergabung...
           </p>
         )}
+
+        {status === "ready" && (
+          <p className="text-cyan-400">
+            {myRole === "p1"
+              ? "Lawan telah bergabung. Klik Mulai Game."
+              : "Menunggu lawan memulai..."}
+          </p>
+        )}
         {status === "playing" && (
           <p
             className={
@@ -170,7 +197,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 w-64 h-64 mb-6">
+      <div className="grid grid-cols-3 grid-rows-3 gap-2 w-64 h-64 mb-6">
         {board.map((cell, index) => (
           <button
             key={index}
@@ -185,6 +212,35 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
           </button>
         ))}
       </div>
+      {status === "ready" && myRole === "p1" && (
+        <button
+          disabled={!roomData.ready.p2}
+          onClick={handleStartGame}
+          className={`px-4 py-2 rounded text-white transition
+      ${
+        !roomData.ready.p2
+          ? "bg-gray-600 cursor-not-allowed"
+          : "bg-green-600 hover:bg-green-700"
+      }`}
+        >
+          Mulai Game
+        </button>
+      )}
+
+      {status === "ready" && myRole === "p2" && (
+        <button
+          disabled={roomData.ready.p2}
+          onClick={handleReady}
+          className={`px-4 py-2 rounded text-white transition
+      ${
+        roomData.ready.p2
+          ? "bg-gray-600 cursor-not-allowed"
+          : "bg-green-600 hover:bg-green-700"
+      }`}
+        >
+          Siap
+        </button>
+      )}
 
       {status === "ended" && (
         <div className="w-full text-center space-y-2">
@@ -202,7 +258,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
 
           {myRole && rematch[myRole === "p1" ? "p2" : "p1"] && (
             <p className="text-xs text-emerald-400 animate-bounce">
-              Lawan sudah menantangmu untuk main lagi!
+              Lawan mengajak bermain lagi.
             </p>
           )}
         </div>

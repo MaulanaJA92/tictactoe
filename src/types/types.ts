@@ -1,6 +1,6 @@
 export type PlayerRole = "p1" | "p2";
 export type BoardCell = "X" | "O" | "";
-export type GameStatus = "waiting" | "playing" | "ended";
+export type GameStatus = "waiting" |"ready"| "playing" | "ended";
 export type WinnerState = "p1" | "p2" | "draw" | "";
 
 export interface RoomData {
@@ -17,4 +17,8 @@ export interface RoomData {
     p1: boolean;
     p2: boolean;
   };
+  ready: {
+  p1: true,
+  p2: false,
+}
 }

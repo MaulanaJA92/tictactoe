@@ -38,6 +38,10 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
         p1: false,
         p2: false,
       },
+      ready: {
+        p1: true,
+        p2: false,
+      },
     };
 
     set(ref(db, `rooms/${newRoomId}`), initialRoomState)
