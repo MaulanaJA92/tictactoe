@@ -41,7 +41,10 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
     };
 
     set(ref(db, `rooms/${newRoomId}`), initialRoomState)
-      .then(() => setRoomId(newRoomId))
+      .then(() => {
+        localStorage.setItem("roomId", newRoomId);
+        setRoomId(newRoomId);
+      })
       .catch((err: Error) => alert("Gagal membuat room: " + err.message));
   };
 
@@ -59,7 +62,7 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
         alert("Room tidak ditemukan. Pastikan kode room benar.");
         return;
       }
-
+      localStorage.setItem("roomId", roomId);
       setRoomId(roomId);
     } catch (err) {
       alert("Gagal mengecek room: " + (err as Error).message);

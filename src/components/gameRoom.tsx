@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ref, onValue, update } from "firebase/database";
+import { ref, onValue, update, remove } from "firebase/database";
 import { db } from "../config/firebase";
 import type {
   RoomData,
@@ -36,7 +36,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
       const data = snapshot.val() as RoomData;
 
       if (!data) {
-        alert("Room tidak ditemukan!");
+        alert("Room dibubarkan!");
         leaveRoom();
         return;
       }
@@ -52,7 +52,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
         });
       }
 
-      if (data.rematch?.p1 && data.rematch?.p2) {
+      if (data.rematch?.p1 && data.rematch?.p2 && data.players.p1 === playerId) {
         const resetState: Partial<RoomData> = {
           board: Array(9).fill("") as BoardCell[],
           turn: "p1",
@@ -61,6 +61,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
           rematch: { p1: false, p2: false },
         };
         update(ref(db, `rooms/${roomId}`), resetState);
+        return;
       }
 
       setRoomData(data);
@@ -72,7 +73,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
 
   if (loading || !roomData) return <p className="text-xl">Memuat Room...</p>;
 
-  const { board, players, turn, status, winner} = roomData;
+  const { board, players, turn, status, winner,rematch} = roomData;
 
   const myRole: PlayerRole | null =
     players.p1 === playerId ? "p1" : players.p2 === playerId ? "p2" : null;
@@ -116,12 +117,19 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
     update(ref(db, `rooms/${roomId}`), updates);
   };
 
-  // const handleRematchRequest = () => {
-  //   if (!myRole) return;
-  //   update(ref(db, `rooms/${roomId}`), {
-  //     [`rematch/${myRole}`]: true,
-  //   });
-  // };
+  const handleLeave = async ()=>{
+    localStorage.removeItem("roomId");
+    await remove(ref(db,`rooms/${roomId}`));
+    leaveRoom();
+  }
+
+  const handleRematchRequest = () => {
+    if (!myRole) return;
+
+    update(ref(db, `rooms/${roomId}`), {
+      [`rematch/${myRole}`]: true,
+    });
+  };
 
   return (
     <div className="flex flex-col items-center bg-slate-800 p-6 rounded-lg shadow-xl border border-slate-700 w-full max-w-md">
@@ -129,7 +137,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
         <p>
           Room: <span className="font-mono text-white font-bold">{roomId}</span>
         </p>
-        <button onClick={leaveRoom} className="text-red-400 hover:underline">
+        <button onClick={handleLeave} className="text-red-400 hover:underline">
           Keluar Lobi
         </button>
       </div>
@@ -178,7 +186,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
         ))}
       </div>
 
-      {/* {status === "ended" && (
+      {status === "ended" && (
         <div className="w-full text-center space-y-2">
           <button
             onClick={handleRematchRequest}
@@ -198,7 +206,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
             </p>
           )}
         </div>
-      )} */}
+      )}
     </div>
   );
 };

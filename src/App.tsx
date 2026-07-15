@@ -4,12 +4,18 @@ import GameRoom from "./components/gameRoom";
 
 const App: React.FC = () => {
   const [playerId, setPlayerId] = useState<string>("");
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>( localStorage.getItem("roomId"));
 
-  useEffect(() => {
-    const id = "player_" + Math.random().toString(36).substring(2, 9);
-    setPlayerId(id);
-  }, []);
+ useEffect(() => {
+  let id = localStorage.getItem("playerId");
+
+  if (!id) {
+    id = "player_" + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem("playerId", id);
+  }
+
+  setPlayerId(id);
+}, []);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black text-white flex flex-col items-center justify-center p-4 sm:p-8 font-sans relative overflow-hidden">
