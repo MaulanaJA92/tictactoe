@@ -21,4 +21,9 @@ export interface RoomData {
   p1: true,
   p2: false,
 }
+score: {
+  p1: number;
+  p2: number;
+  draw: number;
+}
 }

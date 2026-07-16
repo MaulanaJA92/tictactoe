@@ -131,6 +131,22 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
     if (gameWinner) {
       updates.status = "ended";
       updates.winner = gameWinner;
+      if (gameWinner === "p1") {
+        updates.score = {
+          ...roomData.score,
+          p1: roomData.score.p1 + 1,
+        };
+      } else if (gameWinner === "p2") {
+        updates.score = {
+          ...roomData.score,
+          p2: roomData.score.p2 + 1,
+        };
+      } else {
+        updates.score = {
+          ...roomData.score,
+          draw: roomData.score.draw + 1,
+        };
+      }
     }
 
     update(ref(db, `rooms/${roomId}`), updates);
@@ -160,6 +176,24 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
           Keluar Lobi
         </button>
       </div>
+      <div className="w-full flex justify-center gap-6 mb-4 text-center">
+        <div>
+          <p className="text-xs text-slate-400">X</p>
+          <p className="text-xl font-bold text-blue-400">{roomData.score.p1}</p>
+        </div>
+
+        <div>
+          <p className="text-xs text-slate-400">Seri</p>
+          <p className="text-xl font-bold text-yellow-400">
+            {roomData.score.draw}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs text-slate-400">O</p>
+          <p className="text-xl font-bold text-rose-400">{roomData.score.p2}</p>
+        </div>
+      </div>
 
       <div className="text-center mb-6 h-8">
         {status === "waiting" && (
@@ -171,8 +205,12 @@ const GameRoom: React.FC<GameRoomProps> = ({ roomId, playerId, leaveRoom }) => {
         {status === "ready" && (
           <p className="text-cyan-400">
             {myRole === "p1"
-              ? "Lawan telah bergabung. Klik Mulai Game."
-              : "Menunggu lawan memulai..."}
+              ? roomData.ready.p2
+                ? "Lawan sudah siap. Klik Mulai Game."
+                : "Menunggu lawan menekan tombol Siap..."
+              : roomData.ready.p2
+                ? "Menunggu lawan memulai game..."
+                : "Silakan tekan tombol Siap."}
           </p>
         )}
         {status === "playing" && (
