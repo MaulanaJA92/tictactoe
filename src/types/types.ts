@@ -5,6 +5,7 @@ export type WinnerState = "p1" | "p2" | "draw" | "";
 
 export interface RoomData {
   id: string;
+  visibility: "private" | "public";
   status: GameStatus;
   players: {
     p1: string;

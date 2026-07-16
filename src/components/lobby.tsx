@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { get, ref, set } from "firebase/database";
+import React, { useEffect, useState } from "react";
+import { get, onValue, ref, set } from "firebase/database";
 import { db } from "../config/firebase";
 import type { RoomData } from "../types/types";
 
@@ -10,13 +10,43 @@ interface LobbyProps {
 
 const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
   const [inputRoomId, setInputRoomId] = useState<string>("");
+  const [visibility, setVisibility] = useState<"private" | "public">("private");
+  const [publicRooms, setPublicRooms] = useState<RoomData[]>([]);
+  useEffect(() => {
+    const roomsRef = ref(db, "rooms");
 
+    const unsubscribe = onValue(roomsRef, (snapshot) => {
+      const data = snapshot.val();
+
+      if (!data) {
+        setPublicRooms([]);
+        return;
+      }
+
+      const rooms = Object.values(data).filter((room: any) => {
+        return (
+          room.visibility === "public" &&
+          !room.players.p2 &&
+          (room.status === "waiting" || room.status === "ready")
+        );
+      }) as RoomData[];
+
+      setPublicRooms(rooms);
+    });
+
+    return () => unsubscribe();
+  }, []);
   const normalizeRoomId = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return "";
 
     const withoutPrefix = trimmed.replace(/^room_/i, "").trim();
     return `ROOM_${withoutPrefix.toUpperCase()}`;
+  };
+
+  const joinRoom = (roomId: string) => {
+    localStorage.setItem("roomId", roomId);
+    setRoomId(roomId);
   };
 
   const handleCreateRoom = () => {
@@ -26,6 +56,7 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
 
     const initialRoomState: RoomData = {
       id: newRoomId,
+      visibility: visibility,
       status: "waiting",
       players: {
         p1: playerId,
@@ -43,10 +74,10 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
         p2: false,
       },
       score: {
-  p1: 0,
-  p2: 0,
-  draw: 0,
-}
+        p1: 0,
+        p2: 0,
+        draw: 0,
+      },
     };
 
     set(ref(db, `rooms/${newRoomId}`), initialRoomState)
@@ -90,6 +121,27 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
       >
         Buat Room Baru
       </button>
+      <label className="flex items-center gap-2">
+        <input
+          type="radio"
+          name="visibility"
+          value="private"
+          checked={visibility === "private"}
+          onChange={() => setVisibility("private")}
+        />
+        Private Room
+      </label>
+
+      <label className="flex items-center gap-2">
+        <input
+          type="radio"
+          name="visibility"
+          value="public"
+          checked={visibility === "public"}
+          onChange={() => setVisibility("public")}
+        />
+        Public Room
+      </label>
 
       <div className="border-t border-slate-700 my-4 pt-4">
         <form onSubmit={handleJoinRoom} className="space-y-3">
@@ -100,6 +152,7 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
             onChange={(e) => setInputRoomId(e.target.value)}
             className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-center text-xl tracking-wider font-mono uppercase text-white focus:outline-none focus:border-blue-500"
           />
+
           <button
             type="submit"
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded transition"
@@ -107,6 +160,36 @@ const Lobby: React.FC<LobbyProps> = ({ playerId, setRoomId }) => {
             Gabung Room
           </button>
         </form>
+        <div className="border-t border-slate-700 mt-6 pt-4">
+          <h3 className="text-lg font-semibold mb-3">Public Rooms</h3>
+
+          {publicRooms.length === 0 ? (
+            <p className="text-slate-400 text-sm">Belum ada room publik.</p>
+          ) : (
+            <div className="space-y-2">
+              {publicRooms.map((room) => (
+                <div
+                  key={room.id}
+                  className="flex items-center justify-between bg-slate-900 p-3 rounded"
+                >
+                  <div>
+                    <p className="font-mono">{room.id}</p>
+                    <p className="text-xs text-slate-400">
+                      {room.players.p2 ? "2 / 2" : "1 / 2"} Player
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => joinRoom(room.id)}
+                    className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded"
+                  >
+                    Join
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
